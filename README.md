@@ -1,3 +1,6 @@
+
+https://user-images.githubusercontent.com/22256219/119232249-d6afe300-bb24-11eb-802e-c47e244c8980.mp4
+
 # bmv: Bulk Move
 This is a command-line application that acts like a bulk rename tool. It works
 by accepting any amount of valid file names, opening them in your `$EDITOR` (or
