@@ -4,9 +4,12 @@ use std::{fs, process};
 use chrono::Utc;
 use clap::{crate_version, App, AppSettings, Arg};
 
+const NAME: &str = "bmv: Bulk Move";
+const ABOUT: &str = "This tool accepts any amount of file names, opens them in your $EDITOR and renames the ones you changed.";
+
 fn main() {
-    let options = App::new("bmv: Bulk Move")
-        .about("This tool accepts any amount of file names, opens them in your $EDITOR and renames the ones you changed.")
+    let options = App::new(NAME)
+        .about(ABOUT)
         .setting(AppSettings::ArgRequiredElseHelp)
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::TrailingVarArg)
