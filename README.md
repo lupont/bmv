@@ -21,6 +21,8 @@ Once `rustup` is installed, perform the following:
 The last step is optional, it installs it to your `~/.cargo/bin/` directory
 which may or may not be in your `$PATH`.
 
+To see `bmv` in action, please check out the `showcase.mp4` file.
+
 ## OS Support
 `bmv` is tested on Linux, but should work fine on any BSD and macOS as well.
 Windows is untested and unlikely to work, however the changes needed should
