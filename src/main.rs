@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::io::{self, Write};
 use std::{fs, process};
 
 use chrono::Utc;
@@ -6,33 +6,43 @@ use clap::{crate_version, App, AppSettings, Arg};
 
 fn main() {
     let options = App::new("bmv: Bulk Move")
+        .about("This tool accepts any amount of file names, opens them in your $EDITOR and renames the ones you changed.")
+        .setting(AppSettings::ArgRequiredElseHelp)
+        .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::TrailingVarArg)
-        .arg(Arg::new("args").multiple(true))
+        .arg(
+            Arg::new("files")
+                .multiple(true)
+                .about("The names of the file to rename."),
+        )
         .version(crate_version!())
         .get_matches();
 
-    let args = options.values_of("args").unwrap_or_default().collect();
+    let files = options.values_of("files").unwrap_or_default().collect();
+    let datetime = Utc::now().naive_utc();
+    let temp_file_path = format!("/tmp/bmv-{}", datetime.format("%Y%m%d%H%M%S"));
 
-    match run(args) {
-        Ok(path) => match fs::remove_file(path) {
-            Ok(_) => {}
-            Err(_) => process::exit(1),
-        },
+    let result = run(&temp_file_path, files);
 
-        Err(e) => {
-            eprintln!("{}", e.to_string());
-            process::exit(1);
-        }
+    if let Err(e) = &result {
+        eprintln!("{}", e.to_string());
+    }
+
+    match fs::remove_file(temp_file_path) {
+        Ok(_) if result.is_ok() => {}
+        _ => process::exit(1),
     }
 }
 
-fn run(file_names: Vec<&str>) -> Result<String, std::io::Error> {
-    let datetime = Utc::now().naive_utc();
-    let temp_file_path = format!("/tmp/bmv-{}", datetime.format("%Y%m%d%H%M%S"));
+fn run(temp_file_path: &str, file_names: Vec<&str>) -> io::Result<()> {
     let default_editor = "vim".to_string();
 
     if file_names.len() == 0 {
         process::exit(0);
+    }
+
+    for &file_name in file_names.iter() {
+        fs::metadata(file_name)?;
     }
 
     // Get default editor from config file? Flag?
@@ -62,10 +72,12 @@ fn run(file_names: Vec<&str>) -> Result<String, std::io::Error> {
 
     if old_len == new_len {
         for (old, new) in file_names.iter().zip(new_file_names.iter()) {
-            println!("{} -> {}", old, new);
-            fs::rename(old, new)?;
+            if old != new {
+                println!("{} -> {}", old, new);
+                fs::rename(old, new)?;
+            }
         }
     }
 
-    Ok(temp_file_path)
+    Ok(())
 }
