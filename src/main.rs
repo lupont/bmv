@@ -1,69 +1,71 @@
 use std::io::Write;
-use std::{
-    fs::{read_to_string, OpenOptions},
-    process::{exit, Command},
-};
+use std::{fs, process};
 
 use chrono::Utc;
+use clap::{crate_version, App, AppSettings, Arg};
 
 fn main() {
-    match run() {
-        Ok(path) => match std::fs::remove_file(path) {
+    let options = App::new("bmv: Bulk Move")
+        .setting(AppSettings::TrailingVarArg)
+        .arg(Arg::new("args").multiple(true))
+        .version(crate_version!())
+        .get_matches();
+
+    let args = options.values_of("args").unwrap_or_default().collect();
+
+    match run(args) {
+        Ok(path) => match fs::remove_file(path) {
             Ok(_) => {}
-            Err(_) => exit(1),
+            Err(_) => process::exit(1),
         },
 
         Err(e) => {
             eprintln!("{}", e.to_string());
-            exit(1);
+            process::exit(1);
         }
     }
 }
 
-fn run() -> Result<String, std::io::Error> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>();
+fn run(file_names: Vec<&str>) -> Result<String, std::io::Error> {
     let datetime = Utc::now().naive_utc();
     let temp_file_path = format!("/tmp/bmv-{}", datetime.format("%Y%m%d%H%M%S"));
+    let default_editor = "vim".to_string();
 
-    if args.len() == 0 {
-        println!("No files specified, exiting.");
-        exit(0);
+    if file_names.len() == 0 {
+        process::exit(0);
     }
 
-    let editor = match std::env::var("EDITOR") {
-        Ok(editor) => editor,
+    // Get default editor from config file? Flag?
+    let editor = std::env::var("EDITOR").unwrap_or(default_editor);
 
-        // Get default editor from config file?
-        Err(_) => "vim".into(),
-    };
-
-    let mut temp_file = OpenOptions::new()
+    let mut temp_file = fs::OpenOptions::new()
         .write(true)
         .create(true)
         .open(&temp_file_path)?;
 
-    let args_str = args.join("\n");
+    let args_str = file_names.join("\n");
 
     temp_file.write_all(args_str.as_bytes())?;
 
-    let _ = Command::new(&editor).arg(&temp_file_path).status()?;
+    let _ = process::Command::new(&editor)
+        .arg(&temp_file_path)
+        .status()?;
 
-    let contents = read_to_string(&temp_file_path)?;
-    let contents = contents
+    let temp_file_contents = fs::read_to_string(&temp_file_path)?;
+    let new_file_names = temp_file_contents
         .trim_matches(|c| c == '\n')
         .split("\n")
         .collect::<Vec<_>>();
 
-    let old_len = args.len();
-    let new_len = contents.len();
+    let old_len = file_names.len();
+    let new_len = new_file_names.len();
 
     if old_len == new_len {
-        for (old, new) in args.iter().zip(contents.iter()) {
+        for (old, new) in file_names.iter().zip(new_file_names.iter()) {
             println!("{} -> {}", old, new);
-            std::fs::rename(old, new)?;
+            fs::rename(old, new)?;
         }
     }
 
-    // std::fs::remove_file(&temp_file_path)
     Ok(temp_file_path)
 }
