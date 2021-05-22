@@ -36,7 +36,7 @@ request if you'd like.
 
 `bmv *` The editor will contain all files in the current folder.
 
-`bmv ./*` Same as above.
+`bmv ./*` Same as above, but the entries will all be prepended by `./`.
 
 `bmv ../file*` Opens all entries beginning with `file` in the parent directory.
     The editor will contain entries with the `..` in them, and you can change
