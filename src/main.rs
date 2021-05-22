@@ -6,6 +6,7 @@ use clap::{crate_version, App, AppSettings, Arg};
 
 const NAME: &str = "bmv: Bulk Move";
 const ABOUT: &str = "This tool accepts any amount of file names, opens them in your $EDITOR and renames the ones you changed.";
+const DEFAULT_EDITOR: &str = "vim";
 
 fn main() {
     let options = App::new(NAME)
@@ -38,8 +39,6 @@ fn main() {
 }
 
 fn run(temp_file_path: &str, file_names: Vec<&str>) -> io::Result<()> {
-    let default_editor = "vim".to_string();
-
     if file_names.len() == 0 {
         process::exit(0);
     }
@@ -49,7 +48,7 @@ fn run(temp_file_path: &str, file_names: Vec<&str>) -> io::Result<()> {
     }
 
     // Get default editor from config file? Flag?
-    let editor = std::env::var("EDITOR").unwrap_or(default_editor);
+    let editor = std::env::var("EDITOR").unwrap_or(DEFAULT_EDITOR.into());
 
     let mut temp_file = fs::OpenOptions::new()
         .write(true)
