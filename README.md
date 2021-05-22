@@ -4,6 +4,8 @@ by accepting any amount of valid file names, opening them in your `$EDITOR` (or
 `vim` if `$EDITOR` is not set, can be configured through the `DEFAULT_EDITOR`
 constant in `main.rs`), and renaming the ones you have changed.
 
+To see `bmv` in action, please check out the `showcase.mp4` file.
+
 ## Building
 You need `rustc` and `cargo` installed, the easiest way to get them is by
 installing `rustup`.
@@ -20,8 +22,6 @@ Once `rustup` is installed, perform the following:
 
 The last step is optional, it installs it to your `~/.cargo/bin/` directory
 which may or may not be in your `$PATH`.
-
-To see `bmv` in action, please check out the `showcase.mp4` file.
 
 ## OS Support
 `bmv` is tested on Linux, but should work fine on any BSD and macOS as well.
