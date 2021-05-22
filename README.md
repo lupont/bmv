@@ -18,14 +18,14 @@ Once `rustup` is installed, perform the following:
 
 `cargo install --path .`
 
+The last step is optional, it installs it to your `~/.cargo/bin/` directory
+which may or may not be in your `$PATH`.
+
 ## OS Support
 `bmv` is tested on Linux, but should work fine on any BSD and macOS as well.
 Windows is untested and unlikely to work, however the changes needed should
 be minimal and mostly related to the temp file -- feel free to submit a pull
 request if you'd like.
-
-The last step is optional, it installs it to your `~/.cargo/bin/` directory
-which may or may not be in your `$PATH`.
 
 ## Invocation Examples
 `bmv foo.jpg bar.pdf` The editor will contain `foo.jpg` and `bar.pdf`.
