@@ -69,10 +69,7 @@ fn run(temp_file_path: &str, file_names: Vec<&str>) -> io::Result<()> {
         .split("\n")
         .collect::<Vec<_>>();
 
-    let old_len = file_names.len();
-    let new_len = new_file_names.len();
-
-    if old_len == new_len {
+    if file_names.len() == new_file_names.len() {
         for (old, new) in file_names.iter().zip(new_file_names.iter()) {
             if old != new {
                 println!("{} -> {}", old, new);
