@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::process;
 
 use clap::{crate_version, AppSettings, Arg};
@@ -12,7 +12,6 @@ const TMP_FILE_PATH: &str = "/tmp/bmvfile";
 fn main() {
     let options = clap::App::new(NAME)
         .about(ABOUT)
-        .setting(AppSettings::ArgRequiredElseHelp)
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::TrailingVarArg)
         .arg(
@@ -23,7 +22,10 @@ fn main() {
         .version(crate_version!())
         .get_matches();
 
-    let files = options.values_of("files").unwrap_or_default().collect();
+    let files = match options.values_of("files") {
+        None => io::stdin().lock().lines().filter_map(Result::ok).collect(),
+        Some(values) => values.map(|s| s.to_string()).collect(),
+    };
 
     if let Err(e) = run(files) {
         eprintln!("{}", e.to_string());
@@ -35,8 +37,12 @@ fn main() {
     }
 }
 
-fn run(file_names: Vec<&str>) -> io::Result<()> {
-    for &file_name in &file_names {
+fn run(file_names: Vec<String>) -> io::Result<()> {
+    if file_names.is_empty() {
+        process::exit(0);
+    }
+
+    for file_name in &file_names {
         fs::metadata(file_name)?;
     }
 
@@ -62,9 +68,9 @@ fn run(file_names: Vec<&str>) -> io::Result<()> {
         let both = file_names
             .iter()
             .zip(&new_file_names)
-            .filter(|(p, n)| p == n);
+            .filter(|(p, n)| p != n);
 
-        for (&prev, &new) in both {
+        for (prev, &new) in both {
             println!("{} -> {}", prev, new);
             fs::rename(prev, new)?;
         }
