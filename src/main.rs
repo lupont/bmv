@@ -1,7 +1,8 @@
+use std::fs;
 use std::io::{self, Write};
-use std::{fs, process};
+use std::process;
 
-use clap::{crate_version, App, AppSettings, Arg};
+use clap::{crate_version, AppSettings, Arg};
 
 const NAME: &str = "bmv: Bulk Move";
 const ABOUT: &str = "This tool accepts any amount of file names, opens them in your $EDITOR and renames the ones you changed.";
@@ -9,7 +10,7 @@ const DEFAULT_EDITOR: &str = "vim";
 const TMP_FILE_PATH: &str = "/tmp/bmvfile";
 
 fn main() {
-    let options = App::new(NAME)
+    let options = clap::App::new(NAME)
         .about(ABOUT)
         .setting(AppSettings::ArgRequiredElseHelp)
         .setting(AppSettings::ColoredHelp)
@@ -24,56 +25,51 @@ fn main() {
 
     let files = options.values_of("files").unwrap_or_default().collect();
 
-    let result = run(files);
-
-    if let Err(e) = &result {
+    if let Err(e) = run(files) {
         eprintln!("{}", e.to_string());
+        process::exit(1);
     }
 
-    match fs::remove_file(TMP_FILE_PATH) {
-        Ok(_) if result.is_ok() => {}
-        _ => process::exit(1),
+    if fs::remove_file(TMP_FILE_PATH).is_err() {
+        process::exit(1);
     }
 }
 
 fn run(file_names: Vec<&str>) -> io::Result<()> {
-    if file_names.len() == 0 {
-        process::exit(0);
-    }
-
-    for &file_name in file_names.iter() {
+    for &file_name in &file_names {
         fs::metadata(file_name)?;
     }
 
-    // Get default editor from config file? Flag?
     let editor = std::env::var("EDITOR").unwrap_or(DEFAULT_EDITOR.into());
 
     let mut temp_file = fs::OpenOptions::new()
         .write(true)
         .create(true)
-        .open(&TMP_FILE_PATH)?;
+        .open(TMP_FILE_PATH)?;
 
-    let args_str = file_names.join("\n");
+    temp_file.write_all(file_names.join("\n").as_bytes())?;
 
-    temp_file.write_all(args_str.as_bytes())?;
+    let _ = process::Command::new(&editor).arg(TMP_FILE_PATH).status()?;
 
-    let _ = process::Command::new(&editor)
-        .arg(&TMP_FILE_PATH)
-        .status()?;
-
-    let temp_file_contents = fs::read_to_string(&TMP_FILE_PATH)?;
+    let temp_file_contents = fs::read_to_string(TMP_FILE_PATH)?;
     let new_file_names = temp_file_contents
         .trim_matches(|c| c == '\n')
-        .split("\n")
+        .split('\n')
         .collect::<Vec<_>>();
 
-    if file_names.len() == new_file_names.len() {
-        for (old, new) in file_names.iter().zip(new_file_names.iter()) {
-            if old != new {
-                println!("{} -> {}", old, new);
-                fs::rename(old, new)?;
-            }
+    let (prev_len, new_len) = (file_names.len(), new_file_names.len());
+    if prev_len == new_len {
+        let both = file_names
+            .iter()
+            .zip(&new_file_names)
+            .filter(|(p, n)| p == n);
+
+        for (&prev, &new) in both {
+            println!("{} -> {}", prev, new);
+            fs::rename(prev, new)?;
         }
+    } else {
+        eprintln!("Mismatched number of files: {} -> {}", prev_len, new_len);
     }
 
     Ok(())
